@@ -35,6 +35,12 @@ router.post("/register", async (req, res) => {
 
     const user = await regModel(username, email, password);
 
+    req.session.user = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+    };
+
     return res.status(201).json({
       message: "Registration successful",
       user,
@@ -81,6 +87,12 @@ router.post("/login", async (req, res) => {
 
     const { password_hash, ...safeUser } = user;
 
+    req.session.user = {
+      id: safeUser.id,
+      username: safeUser.username,
+      email: safeUser.email,
+    };
+
     return res.status(200).json({
       message: "Login successful",
       user: safeUser,
@@ -94,4 +106,27 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.get("/profile", (req, res) => {
+  if (req.session.user) {
+    return res.json({
+      message: `Welcome back ${req.session.user.username}`,
+      user: req.session.user,
+    });
+  }
+
+  return res.status(401).json({
+    message: "No active session",
+  });
+});
+
+router.post("/logout", async (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      res.status(500).send("Error logging out.");
+    } else {
+      res.clearCookie("connect.sid");
+      res.send("User logged out.");
+    }
+  });
+});
 module.exports = router;
