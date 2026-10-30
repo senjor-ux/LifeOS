@@ -3,6 +3,8 @@ const pool = require("../config/db");
 const requireAuth = require("../middleware/Auth");
 const router = express.Router();
 
+
+// tasks schema (creates stuff in database)
 const taskModel = async ({
   user_id,
   title,
@@ -23,29 +25,35 @@ const taskModel = async ({
   return result.rows[0];
 };
 
-router.post("/add", requireAuth, async (req, res) => {
+// post schema (to create stuff)
+router.post("/", requireAuth, async (req, res) => {
   try {
     const { title, description, status, priority, due_date, scheduled_date } =
       req.body;
 
+    // the only acceptable status and priorities
     const validStatuses = ["inbox", "todo", "in_progress", "done"];
     const validPriorities = ["low", "normal", "high", "urgent"];
 
+    // checks if title exists
     if (!title || typeof title !== "string" || !title.trim())
       return res.status(400).json({ message: "Title required" });
 
+    // checks if status are valid
     if (status !== undefined && !validStatuses.includes(status)) {
       return res.status(400).json({
         message: "Invalid status",
       });
     }
 
+    // checks if priority are valid
     if (priority !== undefined && !validPriorities.includes(priority)) {
       return res.status(400).json({
         message: "Invalid priority",
       });
     }
 
+    // creates task
     const task = await taskModel({
       user_id: req.session.user.id,
       title: title.trim(),
@@ -61,6 +69,7 @@ router.post("/add", requireAuth, async (req, res) => {
       task,
     });
   } catch (err) {
+    // checks for any errors
     console.error("Creating task failed:", err);
 
     return res.status(500).json({
@@ -69,35 +78,69 @@ router.post("/add", requireAuth, async (req, res) => {
   }
 });
 
-const update = async ({
-  task_id,
-  user_id,
-  due_date = undefined,
-  scheduled_date = undefined,
-  priority = undefined,
-  status = undefined,
-}) => {
+// function for updating task
+const update = async (field, values) => {
   const result = await pool.query(
     `
         UPDATE tasks
-        SET due_date = $3, scheduled_date = $4, priority = $5, status = $6
-        WHERE $1 = id
+        SET ${field} updated_at = NOW()
+        WHERE id = $1
             AND user_id = $2
         RETURNING *
     `,
-    [task_id, user_id, due_date, scheduled_date, priority, status],
+    values,
   );
 
   return result.rows[0];
 };
 
-router.post("/update/:id", requireAuth, async (req, res) => {
+// update task with tasks id
+router.patch("/:id", requireAuth, async (req, res) => {
   try {
-    const id = req.params.id;
+    const task_id = req.params.id;
+    const request = req.body;
 
+    // the only fields that can be updated
+    const allowedFields = ["due_date", "scheduled_date", "priority", "status"];
+
+    // check if anything is being updated (can't be empty)
+    if (Object.keys(request).length === 0)
+      return res.status(400).json({ message: "Cannot edit nothing" });
+
+    // checks if there's anything is invalid
+    const invalidField = Object.keys(request).find(
+      (key) => !allowedFields.includes(key),
+    );
+
+    if (invalidField) {
+      return res.status(400).json({
+        message: `Cannot edit unauthorized field: ${invalidField}`,
+      });
+    }
+
+    // used for data base to update gonna look like this "due_date = $3" or longer
+    let field = "";
+    // value of "due_date" will be 2026-10-31
+    let values = [task_id, req.session.user.id];
+    // number for "$3"
+    let num = 0;
+
+    // loops through given data
+    Object.entries(request).forEach((x) => {
+      // adds values to values field so to due_date gonna give date
+      values.push(x[1]);
+
+      // into field gives "due_date = $3"
+      field += `${x[0]} = $${num + 3}, `;
+      // adds one to $3 and makes it $4 for another value
+      num++;
+    });
+
+    // valid statuses and priorities
     const validStatuses = ["inbox", "todo", "in_progress", "done"];
     const validPriorities = ["low", "normal", "high", "urgent"];
 
+    // if status not given don't let through
     if (
       req.body.status !== undefined &&
       !validStatuses.includes(req.body.status)
@@ -107,6 +150,7 @@ router.post("/update/:id", requireAuth, async (req, res) => {
       });
     }
 
+    // if priority not given don't let through
     if (
       req.body.priority !== undefined &&
       !validPriorities.includes(req.body.priority)
@@ -116,28 +160,27 @@ router.post("/update/:id", requireAuth, async (req, res) => {
       });
     }
 
-    const task = await update({
-      task_id: id,
-      user_id: req.session.user.id,
-      due_date: req.body.due_date,
-      scheduled_date: req.body.scheduled_date,
-      priority: req.body.priority,
-      status: req.body.status,
-    });
+    // tries calling update function and gives field and values
+    const task = await update(field, values);
 
+    // when calling if task doesn't exist throw error
     if (!task) return res.status(404).json({ message: "Task doesn't exist" });
 
+    // success
     return res.status(200).json({ message: "Task updated", task });
   } catch (err) {
+    // checking for errors
     console.log("Error while updating task", err);
     res.status(500).json({ message: "Updating task failed" });
   }
 });
 
-router.delete("/delete/:id", requireAuth, async (req, res) => {
+// delete task with task id route
+router.delete("/:id", requireAuth, async (req, res) => {
   try {
     const id = req.params.id;
 
+    // delete task
     const result = await pool.query(
       `
         DELETE FROM tasks
@@ -148,11 +191,14 @@ router.delete("/delete/:id", requireAuth, async (req, res) => {
       [id, req.session.user.id],
     );
 
+    // can't delete not existant task
     if (result.rows.length === 0)
       return res.status(404).json({ message: "Task doesn't exist" });
 
-    res.status(200).json({ message: "Task deleted" });
+    // success
+    res.status(200).json({ message: "Task deleted", task: result.rows[0] });
   } catch (err) {
+    // check for errors
     console.log("Failed deleting task", err);
     res.status(500).json({ message: "Failed deleting task" });
   }
