@@ -22,6 +22,16 @@ async function getTasks(user_id) {
   return result.rows;
 }
 
+async function getTaskById(task_id, user_id) {
+  const result = await pool.query(
+    `SELECT * FROM tasks
+     WHERE id = $1 AND user_id = $2`,
+    [task_id, user_id],
+  );
+
+  return result.rows[0];
+}
+
 async function updateTask(task_id, user_id, updates) {
   const allowedFields = ["due_date", "scheduled_date", "priority", "status"];
 
