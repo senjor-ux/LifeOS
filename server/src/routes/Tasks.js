@@ -1,8 +1,8 @@
 const express = require("express");
 const pool = require("../config/db");
 const requireAuth = require("../middleware/Auth");
-const router = express.Router();
 
+const router = express.Router();
 
 // tasks schema (creates stuff in database)
 const taskModel = async ({
@@ -75,6 +75,48 @@ router.post("/", requireAuth, async (req, res) => {
     return res.status(500).json({
       message: "Creating task failed",
     });
+  }
+});
+
+router.get("/", requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM tasks WHERE user_id = $1 ORDER BY created_at DESC`,
+      [req.session.user.id],
+    );
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: "No task found" });
+
+    return res
+      .status(200)
+      .json({ message: "Tasks retrieved", tasks: result.rows });
+  } catch (err) {
+    console.error("Failed retrieving task:", err);
+
+    return res.status(500).json({ message: "Failed retrieving tasks" });
+  }
+});
+
+router.get("/:id", requireAuth, async (req, res) => {
+  try {
+    const task_id = req.params.id;
+    const result = await pool.query(
+      `
+    SELECT * FROM tasks WHERE id = $1 AND user_id = $2`,
+      [task_id, req.session.user.id],
+    );
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: "No task found" });
+
+    return res
+      .status(200)
+      .json({ message: "Task retrieved", task: result.rows[0] });
+  } catch (err) {
+    console.error("Failed retrieving tasks:", err);
+
+    return res.status(500).json({ message: "Failed retrieving task" });
   }
 });
 
