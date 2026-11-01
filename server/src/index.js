@@ -12,6 +12,7 @@ const PgSession = require("connect-pg-simple")(session);
 const pool = require("./config/db");
 const auth = require("./routes/Authentication");
 const tasks = require("./routes/Tasks")
+const projects = require("./routes/Projects")
 
 // launching stuff
 const app = express();
