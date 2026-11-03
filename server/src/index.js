@@ -1,5 +1,5 @@
-require('dotenv').config({
-    path: require('path').resolve(__dirname, '../.env.local')
+require("dotenv").config({
+  path: require("path").resolve(__dirname, "../.env.local"),
 });
 
 // packages
@@ -7,12 +7,12 @@ const express = require("express");
 const session = require("express-session");
 const PgSession = require("connect-pg-simple")(session);
 
-
 // files
 const pool = require("./config/db");
 const auth = require("./routes/Authentication");
-const tasks = require("./routes/Tasks")
-const projects = require("./routes/Projects")
+const tasks = require("./routes/Tasks");
+const projects = require("./routes/Projects");
+const goals = require("./routes/Goals");
 
 // launching stuff
 const app = express();
@@ -44,8 +44,9 @@ app.use(
 
 // endpoints
 app.use("/auth", auth);
-app.use("/task", tasks)
-
+app.use("/task", tasks);
+app.use("/project", projects);
+app.use("/goal", goals);
 
 // start server
 app.listen(port, () => {
