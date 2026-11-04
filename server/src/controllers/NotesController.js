@@ -16,7 +16,11 @@ async function createOneNote(req, res) {
     if (!title || !title.trim() || typeof title !== "String")
       return res.status(400).json({ message: "Fill in title" });
 
-    const result = await createNote([title.trim(), content]);
+    const result = await createNote([
+      req.session.user.id,
+      title.trim(),
+      content,
+    ]);
 
     return res.status(201).json({ message: "Note created", data: result });
   } catch (err) {
@@ -61,7 +65,7 @@ async function updateExistingNote(req, res) {
     if (Object.keys(updates).length === 0)
       return res.status(400).json({ message: "Cannot edit nothing" });
 
-    const allowedFields = ["name", "content"];
+    const allowedFields = ["title", "content"];
 
     const invalidField = Object.keys(updates).find(
       (key) => !allowedFields.includes(key),
@@ -72,13 +76,9 @@ async function updateExistingNote(req, res) {
         message: `Cannot update field: ${invalidField}`,
       });
 
-    if (note.title !== undefined) note.title = note.title.trim();
+    if (updates.title !== undefined) updates.title = updates.title.trim();
 
-    const note = await updateExistingNote(
-      note_id,
-      req.session.user.id,
-      updates,
-    );
+    const note = await updateNote(note_id, req.session.user.id, updates);
 
     if (!note) return res.status(404).json({ message: "Note doesn't exist" });
 
