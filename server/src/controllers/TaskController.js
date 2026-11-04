@@ -10,7 +10,7 @@ async function getAllTasks(req, res) {
   try {
     const result = await getTasks(req.session.user.id);
 
-    return res.status(200).json({ message: "Tasks retrieved", tasks: result });
+    return res.status(200).json({ message: "Tasks retrieved", data: result });
   } catch (err) {
     console.error("Failed retrieving task:", err);
 
@@ -26,7 +26,7 @@ async function getOneTask(req, res) {
 
     if (!result) return res.status(404).json({ message: "No task found" });
 
-    return res.status(200).json({ message: "Task retrieved", task: result });
+    return res.status(200).json({ message: "Task retrieved", data: result });
   } catch (err) {
     console.error("Failed retrieving tasks:", err);
 
@@ -72,7 +72,7 @@ async function createNewTask(req, res) {
 
     return res.status(201).json({
       message: "Task made successfully",
-      task: result,
+      data: result,
     });
   } catch (err) {
     console.error("Creating task failed:", err);
@@ -128,7 +128,7 @@ async function updateExistingTask(req, res) {
 
     return res.status(200).json({
       message: "Task updated successfully",
-      task,
+      data: task,
     });
   } catch (err) {
     console.error("Error while updating task:", err);
@@ -147,7 +147,7 @@ async function deleteExistingTask(req, res) {
 
     if (!result) return res.status(404).json({ message: "Task doesn't exist" });
 
-    res.status(200).json({ message: "Task deleted", task: result });
+    res.status(200).json({ message: "Task deleted", data: result });
   } catch (err) {
     console.log("Failed deleting task", err);
 

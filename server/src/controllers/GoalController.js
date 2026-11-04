@@ -40,7 +40,7 @@ async function createNewGoal(req, res) {
 
     return res.status(201).json({
       message: "Goal created successfully",
-      goal: result,
+      data: result,
     });
   } catch (err) {
     console.error("Creating goal failed:", err);
@@ -97,7 +97,7 @@ async function updateExistingGoal(req, res) {
 
     return res.status(200).json({
       message: "Goal updated successfully",
-      goal,
+      data: goal,
     });
   } catch (err) {
     console.error("Updating goal failed:", err);
@@ -114,7 +114,7 @@ async function getAllGoals(req, res) {
 
     return res.status(200).json({
       message: "Goals retrieved",
-      goals: result,
+      data: result,
     });
   } catch (err) {
     console.error("Failed retrieving goals:", err);
@@ -135,7 +135,7 @@ async function getOneGoal(req, res) {
 
     return res.status(200).json({
       message: "Goal retrieved",
-      goal: result,
+      data: result,
     });
   } catch (err) {
     console.error("Failed retrieving goal:", err);
@@ -156,7 +156,7 @@ async function deleteExistingGoal(req, res) {
 
     return res.status(200).json({
       message: "Goal deleted",
-      goal: result,
+      data: result,
     });
   } catch (err) {
     console.error("Failed deleting goal:", err);

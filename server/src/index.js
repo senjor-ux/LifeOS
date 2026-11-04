@@ -13,6 +13,7 @@ const auth = require("./routes/Authentication");
 const tasks = require("./routes/Tasks");
 const projects = require("./routes/Projects");
 const goals = require("./routes/Goals");
+const notes = require("./routes/Notes");
 
 // launching stuff
 const app = express();
@@ -47,6 +48,7 @@ app.use("/auth", auth);
 app.use("/task", tasks);
 app.use("/project", projects);
 app.use("/goal", goals);
+app.use("/notes", notes);
 
 // start server
 app.listen(port, () => {

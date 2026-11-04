@@ -12,7 +12,7 @@ async function getAllProjects(req, res) {
 
     return res.status(200).json({
       message: "Projects retrieved",
-      projects: result,
+      data: result,
     });
   } catch (err) {
     console.error("Failed retrieving projects:", err);
@@ -33,7 +33,7 @@ async function getOneProject(req, res) {
 
     return res.status(200).json({
       message: "Project retrieved",
-      project: result,
+      data: result,
     });
   } catch (err) {
     console.error("Failed retrieving project:", err);
@@ -83,7 +83,7 @@ async function createNewProject(req, res) {
 
     return res.status(201).json({
       message: "Project created successfully",
-      project: result,
+      data: result,
     });
   } catch (err) {
     console.error("Creating project failed:", err);
@@ -157,7 +157,7 @@ async function updateExistingProject(req, res) {
 
     return res.status(200).json({
       message: "Project updated successfully",
-      project,
+      data: project,
     });
   } catch (err) {
     console.error("Error while updating project:", err);
@@ -179,7 +179,7 @@ async function deleteExistingProject(req, res) {
 
     return res.status(200).json({
       message: "Project deleted",
-      project: result,
+      data: result,
     });
   } catch (err) {
     console.error("Failed deleting project:", err);

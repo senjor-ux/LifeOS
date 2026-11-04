@@ -48,7 +48,7 @@ async function registerUser(req, res) {
 
         return res.status(200).json({
           message: "Registration successful",
-          user: safeUser,
+          data: safeUser,
         });
       });
     });
@@ -112,7 +112,7 @@ async function loginUser(req, res) {
 
         return res.status(200).json({
           message: "Login successful",
-          user: safeUser,
+          data: safeUser,
         });
       });
     });
@@ -140,7 +140,7 @@ async function profile(req, res) {
   if (req.session.user) {
     return res.json({
       message: `Welcome back ${req.session.user.username}`,
-      user: req.session.user,
+      data: req.session.user,
     });
   }
 
