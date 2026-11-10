@@ -5,10 +5,13 @@ const {
   updateProj,
   deleteProj,
 } = require("../models/ProjModel");
+const createError = require("../utils/createError");
 
 async function getAllProjects(req, res) {
   try {
     const result = await getProj(req.session.user.id);
+
+    if (result === undefined) createError("No project found", 404);
 
     return res.status(200).json({
       message: "Projects retrieved",
@@ -17,8 +20,8 @@ async function getAllProjects(req, res) {
   } catch (err) {
     console.error("Failed retrieving projects:", err);
 
-    return res.status(500).json({
-      message: "Failed retrieving projects",
+    return res.status(err.statusCode || 500).json({
+      message: err.message || "Internal server error",
     });
   }
 }
@@ -29,7 +32,7 @@ async function getOneProject(req, res) {
 
     const result = await getOneProj(proj_id, req.session.user.id);
 
-    if (!result) return res.status(404).json({ message: "No project found" });
+    if (!result) createError("No project found", 404);
 
     return res.status(200).json({
       message: "Project retrieved",
@@ -47,7 +50,7 @@ async function getOneProject(req, res) {
 async function createNewProject(req, res) {
   try {
     if (!req.body || typeof req.body !== "object" || Array.isArray(req.body))
-      return res.status(400).json({ message: "Invalid request body" });
+      createError("Invalid request body", 400);
 
     const { name, description, status, priority, start_date, target_date } =
       req.body;
@@ -63,13 +66,13 @@ async function createNewProject(req, res) {
     const validPriorities = ["low", "normal", "high", "urgent"];
 
     if (typeof name !== "string" || !name.trim())
-      return res.status(400).json({ message: "Project name required" });
+      createError("Project name required", 400);
 
     if (status !== undefined && !validStatuses.includes(status))
-      return res.status(400).json({ message: "Invalid status" });
+      createError("Invalid status", 400);
 
     if (priority !== undefined && !validPriorities.includes(priority))
-      return res.status(400).json({ message: "Invalid priority" });
+      createError("Invalid priority", 400);
 
     const result = await createProj([
       req.session.user.id,
@@ -88,8 +91,8 @@ async function createNewProject(req, res) {
   } catch (err) {
     console.error("Creating project failed:", err);
 
-    return res.status(500).json({
-      message: "Creating project failed",
+    return res.status(err.statusCode || 500).json({
+      message: err.message || "Internal server error",
     });
   }
 }
@@ -100,10 +103,10 @@ async function updateExistingProject(req, res) {
     const updates = req.body;
 
     if (!updates || typeof updates !== "object" || Array.isArray(updates))
-      return res.status(400).json({ message: "Invalid request body" });
+      createError("Invalid request body", 400);
 
     if (Object.keys(updates).length === 0)
-      return res.status(400).json({ message: "Cannot edit nothing" });
+      createError("Cannot edit nothing", 400);
 
     const allowedFields = [
       "name",
@@ -118,10 +121,7 @@ async function updateExistingProject(req, res) {
       (key) => !allowedFields.includes(key),
     );
 
-    if (invalidField)
-      return res.status(400).json({
-        message: `Cannot update field: ${invalidField}`,
-      });
+    if (invalidField) createError(`Cannot update field: ${invalidField}`, 400);
 
     const validStatuses = [
       "planning",
@@ -137,23 +137,22 @@ async function updateExistingProject(req, res) {
       updates.name !== undefined &&
       (typeof updates.name !== "string" || !updates.name.trim())
     )
-      return res.status(400).json({ message: "Invalid project name" });
+      createError("Invalid project name", 400);
 
     if (updates.status !== undefined && !validStatuses.includes(updates.status))
-      return res.status(400).json({ message: "Invalid status" });
+      createError("Invalid status", 400);
 
     if (
       updates.priority !== undefined &&
       !validPriorities.includes(updates.priority)
     )
-      return res.status(400).json({ message: "Invalid priority" });
+      createError("Invalid priority", 400);
 
     if (updates.name !== undefined) updates.name = updates.name.trim();
 
     const project = await updateProj(proj_id, req.session.user.id, updates);
 
-    if (!project)
-      return res.status(404).json({ message: "Project doesn't exist" });
+    if (!project) createError("Project doens't exist", 404);
 
     return res.status(200).json({
       message: "Project updated successfully",
@@ -162,8 +161,8 @@ async function updateExistingProject(req, res) {
   } catch (err) {
     console.error("Error while updating project:", err);
 
-    return res.status(500).json({
-      message: "Updating project failed",
+    return res.status(err.statusCode || 500).json({
+      message: err.message || "Internal server error",
     });
   }
 }
@@ -174,8 +173,7 @@ async function deleteExistingProject(req, res) {
 
     const result = await deleteProj(proj_id, req.session.user.id);
 
-    if (!result)
-      return res.status(404).json({ message: "Project doesn't exist" });
+    if (!result) createError("Project doesn't exist", 404);
 
     return res.status(200).json({
       message: "Project deleted",
@@ -184,8 +182,8 @@ async function deleteExistingProject(req, res) {
   } catch (err) {
     console.error("Failed deleting project:", err);
 
-    return res.status(500).json({
-      message: "Failed deleting project",
+    return res.status(err.statusCode || 500).json({
+      message: err.message || "Internal server error",
     });
   }
 }

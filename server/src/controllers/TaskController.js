@@ -5,16 +5,19 @@ const {
   updateTask,
   deleteTask,
 } = require("../models/TaskModel");
+const createError = require("../utils/createError");
 
 async function getAllTasks(req, res) {
   try {
     const result = await getTasks(req.session.user.id);
 
+    if (!result) createError("No task found", 404);
+
     return res.status(200).json({ message: "Tasks retrieved", data: result });
   } catch (err) {
     console.error("Failed retrieving task:", err);
 
-    return res.status(500).json({ message: "Failed retrieving tasks" });
+    return res.status(err.statusCode || 500).json({ message: err.message || "Internal server error" });
   }
 }
 
@@ -24,20 +27,20 @@ async function getOneTask(req, res) {
 
     const result = await getTaskById(task_id, req.session.user.id);
 
-    if (!result) return res.status(404).json({ message: "No task found" });
+    if (!result) createError("No task found", 404)
 
     return res.status(200).json({ message: "Task retrieved", data: result });
   } catch (err) {
     console.error("Failed retrieving tasks:", err);
 
-    return res.status(500).json({ message: "Failed retrieving task" });
+    return res.status(err.statusCode || 500).json({ message: err.message || "Internal server error" });
   }
 }
 
 async function createNewTask(req, res) {
   try {
     if (!req.body || typeof req.body !== "object" || Array.isArray(req.body))
-      return res.status(400).json({ message: "Invalid request body" });
+      createError("Invalid request body", 400)
 
     const { title, description, status, priority, due_date, scheduled_date } =
       req.body;
@@ -46,19 +49,14 @@ async function createNewTask(req, res) {
     const validPriorities = ["low", "normal", "high", "urgent"];
 
     if (!title || typeof title !== "string" || !title.trim())
-      return res.status(400).json({ message: "Title required" });
+      createError("Title required", 400)
 
-    if (status !== undefined && !validStatuses.includes(status)) {
-      return res.status(400).json({
-        message: "Invalid status",
-      });
-    }
+    if (status !== undefined && !validStatuses.includes(status))
+      createError("Invalid status", 400)
 
-    if (priority !== undefined && !validPriorities.includes(priority)) {
-      return res.status(400).json({
-        message: "Invalid priority",
-      });
-    }
+    if (priority !== undefined && !validPriorities.includes(priority))
+      createError("Invalid priority", 400)
+
 
     const result = await createTask({
       user_id: req.session.user.id,
@@ -77,8 +75,8 @@ async function createNewTask(req, res) {
   } catch (err) {
     console.error("Creating task failed:", err);
 
-    return res.status(500).json({
-      message: "Creating task failed",
+    return res.status(err.statusCode || 500).json({
+      message: err.message || "Internal server error",
     });
   }
 }
@@ -89,10 +87,11 @@ async function updateExistingTask(req, res) {
     const updates = req.body;
 
     if (!updates || typeof updates !== "object" || Array.isArray(updates))
-      return res.status(400).json({ message: "Invalid request body" });
+      createError("Invalid request body", 400)
 
     if (Object.keys(updates).length === 0)
-      return res.status(400).json({ message: "Cannot edit nothing" });
+      createError("Cannot edit nothing", 400)
+
     const allowedFields = ["due_date", "scheduled_date", "priority", "status"];
 
     const invalidField = Object.keys(updates).find(
@@ -100,31 +99,30 @@ async function updateExistingTask(req, res) {
     );
 
     if (invalidField)
-      return res.status(400).json({
-        message: `Cannot update field: ${invalidField}`,
-      });
+      createError(`Cannot update field: ${invalidField}`, 400)
 
     const validStatuses = ["inbox", "todo", "in_progress", "done"];
     const validPriorities = ["low", "normal", "high", "urgent"];
 
     if (!updates || typeof updates !== "object" || Array.isArray(updates))
-      return res.status(400).json({ message: "Invalid request body" });
+      createError("Invalid request body", 400)
 
     if (Object.keys(updates).length === 0)
-      return res.status(400).json({ message: "Cannot edit nothing" });
+      createError("Invalid request body", 400)
 
     if (updates.status !== undefined && !validStatuses.includes(updates.status))
-      return res.status(400).json({ message: "Invalid status" });
+      createError("Invalid status", 400)
+
 
     if (
       updates.priority !== undefined &&
       !validPriorities.includes(updates.priority)
     )
-      return res.status(400).json({ message: "Invalid priority" });
+      createError("Invalid priority", 400)
 
     const task = await updateTask(task_id, req.session.user.id, updates);
 
-    if (!task) return res.status(404).json({ message: "Task doesn't exist" });
+    if(!task) createError("Task doesn't exist", 404)
 
     return res.status(200).json({
       message: "Task updated successfully",
@@ -133,8 +131,8 @@ async function updateExistingTask(req, res) {
   } catch (err) {
     console.error("Error while updating task:", err);
 
-    return res.status(500).json({
-      message: "Updating task failed",
+    return res.status(err.statusCode || 500).json({
+      message: err.message || "Internal server error",
     });
   }
 }
@@ -145,13 +143,13 @@ async function deleteExistingTask(req, res) {
 
     const result = await deleteTask(task_id, req.session.user.id);
 
-    if (!result) return res.status(404).json({ message: "Task doesn't exist" });
+    if (!result) createError("Task doesn't exist", 404)
 
     res.status(200).json({ message: "Task deleted", data: result });
   } catch (err) {
     console.log("Failed deleting task", err);
 
-    res.status(500).json({ message: "Failed deleting task" });
+    res.status(err.statusCode || 500).json({ message: err.message || "Internal server error" });
   }
 }
 

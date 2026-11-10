@@ -1,5 +1,6 @@
 const { getUser, register } = require("../models/AuthModel");
 const bcrypt = require("bcrypt");
+const createError = require("../utils/createError");
 
 async function registerUser(req, res) {
   try {
@@ -16,13 +17,13 @@ async function registerUser(req, res) {
       !email.trim() ||
       !password
     )
-      return res.status(400).json({ message: "Invalid Input" });
+      createError("Invalid input", 400);
 
     const normalize = email.trim().toLowerCase();
 
     const check = await getUser(normalize);
 
-    if (check) return res.status(409).json({ message: "User already exist" });
+    if (check) createError("User already exist", 409);
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
@@ -32,7 +33,9 @@ async function registerUser(req, res) {
 
     req.session.regenerate((err) => {
       if (err) {
-        return res.status(500).json({ message: "Registration failed" });
+        return res.status(500).json({
+          message: "Registration failed",
+        });
       }
 
       req.session.user = {
@@ -43,10 +46,12 @@ async function registerUser(req, res) {
 
       req.session.save((err) => {
         if (err) {
-          return res.status(500).json({ message: "Registration failed" });
+          return res.status(500).json({
+            message: "Registration failed",
+          });
         }
 
-        return res.status(200).json({
+        return res.status(201).json({
           message: "Registration successful",
           data: safeUser,
         });
@@ -55,8 +60,8 @@ async function registerUser(req, res) {
   } catch (err) {
     console.error("Registration failed:", err);
 
-    return res.status(500).json({
-      message: "Registration failed",
+    return res.status(err.statusCode || 500).json({
+      message: err.message || "Internal server error",
     });
   }
 }
@@ -64,7 +69,7 @@ async function registerUser(req, res) {
 async function loginUser(req, res) {
   try {
     if (!req.body || typeof req.body !== "object" || Array.isArray(req.body))
-      return res.status(400).json({ message: "Invalid request body" });
+      createError("Invalid request body", 400);
 
     const { email, password } = req.body;
 
@@ -74,29 +79,23 @@ async function loginUser(req, res) {
       !email.trim() ||
       !password
     )
-      return res.status(400).json({ message: "Invalid Input" });
+      createError("Invalid input", 400);
 
     const normalize = email.trim().toLowerCase();
 
     const user = await getUser(normalize);
 
-    if (!user)
-      return res.status(401).json({
-        message: "Invalid email or password",
-      });
+    if (!user) createError("Invalid email or password", 401);
 
     const passwordMatches = await bcrypt.compare(password, user.password_hash);
 
-    if (!passwordMatches)
-      return res.status(401).json({
-        message: "Invalid email or password",
-      });
+    if (!passwordMatches) createError("Invalid email or password", 401);
 
     const { password_hash, ...safeUser } = user;
 
     req.session.regenerate((err) => {
       if (err) {
-        return res.status(500).json({ message: "Login failed" });
+        res.status(500).json({ message: "Login failed" });
       }
 
       req.session.user = {
@@ -107,7 +106,7 @@ async function loginUser(req, res) {
 
       req.session.save((err) => {
         if (err) {
-          return res.status(500).json({ message: "Login failed" });
+          res.status(500).json({ message: "Login failed" });
         }
 
         return res.status(200).json({
@@ -119,8 +118,8 @@ async function loginUser(req, res) {
   } catch (err) {
     console.error("Login error:", err);
 
-    return res.status(500).json({
-      message: "Login failed",
+    return res.status(err.statusCode || 500).json({
+      message: err.message || "Login failed",
     });
   }
 }

@@ -5,6 +5,7 @@ const {
   getOneGoal: getGoalById,
   deleteGoal,
 } = require("../models/GoalModel");
+const createError = require("../utils/createError");
 
 const validStatuses = [
   "not_started",
@@ -17,16 +18,16 @@ const validStatuses = [
 async function createNewGoal(req, res) {
   try {
     if (!req.body || typeof req.body !== "object" || Array.isArray(req.body))
-      return res.status(400).json({ message: "Invalid request body" });
+      createError("Invalid request body", 400);
 
     const { title, description, reason, status, start_date, target_date } =
       req.body;
 
     if (typeof title !== "string" || !title.trim())
-      return res.status(400).json({ message: "Goal title required" });
+      createError("Goal title required", 400);
 
     if (status !== undefined && !validStatuses.includes(status))
-      return res.status(400).json({ message: "Invalid status" });
+      createError("Invalid status", 400);
 
     const result = await createGoal([
       req.session.user.id,
@@ -45,8 +46,8 @@ async function createNewGoal(req, res) {
   } catch (err) {
     console.error("Creating goal failed:", err);
 
-    return res.status(500).json({
-      message: "Creating goal failed",
+    return res.status(err.statusCode || 500).json({
+      message: err.message || "Internal server error",
     });
   }
 }
@@ -57,10 +58,10 @@ async function updateExistingGoal(req, res) {
     const updates = req.body;
 
     if (!updates || typeof updates !== "object" || Array.isArray(updates))
-      return res.status(400).json({ message: "Invalid request body" });
+      createError("Invalid request body", 400);
 
     if (Object.keys(updates).length === 0)
-      return res.status(400).json({ message: "Cannot edit nothing" });
+      createError("Cannot edit nothing", 400);
 
     const allowedFields = [
       "title",
@@ -75,25 +76,22 @@ async function updateExistingGoal(req, res) {
       (key) => !allowedFields.includes(key),
     );
 
-    if (invalidField)
-      return res.status(400).json({
-        message: `Cannot update field: ${invalidField}`,
-      });
+    if (invalidField) createError(`Cannot update field: ${invalidField}`, 400);
 
     if (
       updates.title !== undefined &&
       (typeof updates.title !== "string" || !updates.title.trim())
     )
-      return res.status(400).json({ message: "Invalid goal title" });
+      createError("Invalid goal title", 400);
 
     if (updates.status !== undefined && !validStatuses.includes(updates.status))
-      return res.status(400).json({ message: "Invalid status" });
+      createError("Invalid status", 400);
 
     if (updates.title !== undefined) updates.title = updates.title.trim();
 
     const goal = await updateGoal(goal_id, req.session.user.id, updates);
 
-    if (!goal) return res.status(404).json({ message: "Goal doesn't exist" });
+    if (!goal) createError("Goal doesn't exist", 404);
 
     return res.status(200).json({
       message: "Goal updated successfully",
@@ -102,8 +100,8 @@ async function updateExistingGoal(req, res) {
   } catch (err) {
     console.error("Updating goal failed:", err);
 
-    return res.status(500).json({
-      message: "Updating goal failed",
+    return res.status(err.statusCode || 500).json({
+      message: err.message || "Internal server error",
     });
   }
 }
@@ -112,6 +110,8 @@ async function getAllGoals(req, res) {
   try {
     const result = await getGoals(req.session.user.id);
 
+    if (result === undefined) createError("No goal exist", 404);
+
     return res.status(200).json({
       message: "Goals retrieved",
       data: result,
@@ -119,8 +119,8 @@ async function getAllGoals(req, res) {
   } catch (err) {
     console.error("Failed retrieving goals:", err);
 
-    return res.status(500).json({
-      message: "Failed retrieving goals",
+    return res.status(err.statusCode || 500).json({
+      message: err.message || "Internal server error",
     });
   }
 }
@@ -131,7 +131,7 @@ async function getOneGoal(req, res) {
 
     const result = await getGoalById(goal_id, req.session.user.id);
 
-    if (!result) return res.status(404).json({ message: "No goal found" });
+    if (!result) createError("No goal found", 404);
 
     return res.status(200).json({
       message: "Goal retrieved",
@@ -140,8 +140,8 @@ async function getOneGoal(req, res) {
   } catch (err) {
     console.error("Failed retrieving goal:", err);
 
-    return res.status(500).json({
-      message: "Failed retrieving goal",
+    return res.status(err.statusCode || 500).json({
+      message: err.message || "Internal server error",
     });
   }
 }
@@ -152,7 +152,7 @@ async function deleteExistingGoal(req, res) {
 
     const result = await deleteGoal(goal_id, req.session.user.id);
 
-    if (!result) return res.status(404).json({ message: "Goal doesn't exist" });
+    if (!result) createError("Goal doesn't exist", 404);
 
     return res.status(200).json({
       message: "Goal deleted",
@@ -161,8 +161,8 @@ async function deleteExistingGoal(req, res) {
   } catch (err) {
     console.error("Failed deleting goal:", err);
 
-    return res.status(500).json({
-      message: "Failed deleting goal",
+    return res.status(err.statusCode || 500).json({
+      message: err.message || "Internal server error",
     });
   }
 }
