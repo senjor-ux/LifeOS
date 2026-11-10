@@ -14,6 +14,7 @@ const tasks = require("./routes/Tasks");
 const projects = require("./routes/Projects");
 const goals = require("./routes/Goals");
 const notes = require("./routes/Notes");
+const noteLinks = require("./routes/NoteLink")
 
 // launching stuff
 const app = express();
@@ -49,6 +50,7 @@ app.use("/task", tasks);
 app.use("/project", projects);
 app.use("/goal", goals);
 app.use("/notes", notes);
+app.use("/", noteLinks)
 
 // start server
 app.listen(port, () => {
